@@ -2,8 +2,6 @@ module github.com/bborbe/notification-controller
 
 go 1.27.1
 
-replace github.com/bborbe/notification => ../notification
-
 require (
 	github.com/bborbe/cqrs v0.6.11
 	github.com/bborbe/errors v1.6.1
@@ -11,7 +9,7 @@ require (
 	github.com/bborbe/kafka v1.26.0
 	github.com/bborbe/kv v1.21.16
 	github.com/bborbe/log v1.7.1
-	github.com/bborbe/notification v0.0.0-00010101000000-000000000000
+	github.com/bborbe/notification v0.1.2
 	github.com/bborbe/run v1.11.0
 	github.com/bborbe/sentry v1.10.2
 	github.com/bborbe/service v1.10.14

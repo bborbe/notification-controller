@@ -16,16 +16,15 @@ import (
 	libkafka "github.com/bborbe/kafka"
 	libkv "github.com/bborbe/kv"
 	"github.com/bborbe/log"
-	"github.com/bborbe/run"
-	libtime "github.com/bborbe/time"
-
+	core "github.com/bborbe/notification"
 	"github.com/bborbe/notification-controller/pkg"
 	"github.com/bborbe/notification-controller/pkg/command"
 	"github.com/bborbe/notification-controller/pkg/handler"
 	discordcommand "github.com/bborbe/notification/command/discord"
 	"github.com/bborbe/notification/command/notification"
-	"github.com/bborbe/notification"
 	"github.com/bborbe/notification/discord"
+	"github.com/bborbe/run"
+	libtime "github.com/bborbe/time"
 )
 
 func CreateSendHandler(

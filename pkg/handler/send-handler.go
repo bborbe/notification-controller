@@ -10,9 +10,8 @@ import (
 
 	"github.com/bborbe/errors"
 	libhttp "github.com/bborbe/http"
-
+	core "github.com/bborbe/notification"
 	"github.com/bborbe/notification/command/notification"
-	"github.com/bborbe/notification"
 )
 
 func NewSendHandler(

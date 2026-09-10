@@ -9,13 +9,12 @@ import (
 
 	"github.com/bborbe/cqrs/base"
 	kvmocks "github.com/bborbe/kv/mocks"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
+	core "github.com/bborbe/notification"
 	"github.com/bborbe/notification-controller/pkg"
-	"github.com/bborbe/notification"
 	"github.com/bborbe/notification/discord"
 	"github.com/bborbe/notification/mocks"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("DiscordNotificationHandler", func() {

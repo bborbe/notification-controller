@@ -11,12 +11,11 @@ import (
 	"github.com/bborbe/cqrs/cdb"
 	"github.com/bborbe/errors"
 	libkv "github.com/bborbe/kv"
-	"github.com/bborbe/time"
-	"github.com/golang/glog"
-
+	core "github.com/bborbe/notification"
 	"github.com/bborbe/notification-controller/pkg"
 	"github.com/bborbe/notification/command/notification"
-	"github.com/bborbe/notification"
+	"github.com/bborbe/time"
+	"github.com/golang/glog"
 )
 
 func NewNotificationPublishCommandObjectExecutor(

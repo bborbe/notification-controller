@@ -10,11 +10,10 @@ import (
 	"github.com/bborbe/cqrs/base"
 	"github.com/bborbe/errors"
 	libkv "github.com/bborbe/kv"
-	"github.com/golang/glog"
-
+	core "github.com/bborbe/notification"
 	command "github.com/bborbe/notification/command/discord"
-	"github.com/bborbe/notification"
 	"github.com/bborbe/notification/discord"
+	"github.com/golang/glog"
 )
 
 // NewDiscordNotificationHandler returns a notificationHandler

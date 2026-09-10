@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"github.com/bborbe/cqrs/base"
+	core "github.com/bborbe/notification"
 	"github.com/bborbe/notification-controller/pkg"
-	"github.com/bborbe/notification"
 )
 
 type NotificationSender struct {

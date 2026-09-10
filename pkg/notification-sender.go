@@ -10,9 +10,8 @@ import (
 	"github.com/bborbe/cqrs/base"
 	"github.com/bborbe/errors"
 	libkafka "github.com/bborbe/kafka"
+	core "github.com/bborbe/notification"
 	"github.com/golang/glog"
-
-	"github.com/bborbe/notification"
 )
 
 //counterfeiter:generate -o ../mocks/notification-sender.go --fake-name NotificationSender . NotificationSender
