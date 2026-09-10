@@ -8,6 +8,6 @@ Please choose versions by [Semantic Versioning](http://semver.org/).
 * MINOR version when you add functionality in a backwards-compatible manner, and
 * PATCH version when you make backwards-compatible bug fixes.
 
-## Unreleased
+## v0.1.0
 
 - feat: extract notification controller service from trading monorepo (consumes notification topic, routes to channel handlers)
