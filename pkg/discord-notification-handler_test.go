@@ -27,8 +27,7 @@ var _ = Describe("DiscordNotificationHandler", func() {
 		commandSendCommandObjectSender = &mocks.CommandSendCommandObjectSender{}
 		notificationHandler = pkg.NewDiscordNotificationHandler(
 			commandSendCommandObjectSender,
-			"notifications",
-			"test",
+			pkg.NewDiscordChannelRouting("notifications", "test"),
 		)
 	})
 	Context("UpdateNotification", func() {
@@ -69,9 +68,9 @@ var _ = Describe("DiscordNotificationHandler", func() {
 				Expect(argCommand.ChannelName).To(Equal(discord.ChannelName("banana")))
 			})
 		})
-		Context("non-test type without target", func() {
+		Context("signal type without target", func() {
 			BeforeEach(func() {
-				notification.Type = core.NotificationType("info")
+				notification.Type = core.SignalNotificationType
 				notification.Target = nil
 			})
 			It("returns no error", func() {
@@ -82,6 +81,33 @@ var _ = Describe("DiscordNotificationHandler", func() {
 				argCtx, argCommand := commandSendCommandObjectSender.SendCommandArgsForCall(0)
 				Expect(argCtx).NotTo(BeNil())
 				Expect(argCommand.ChannelName).To(Equal(discord.ChannelName("notifications")))
+			})
+		})
+		Context("agent-escalation type without target", func() {
+			BeforeEach(func() {
+				notification.Type = core.AgentEscalationNotificationType
+				notification.Target = nil
+			})
+			It("returns no error", func() {
+				Expect(err).To(BeNil())
+			})
+			It("send message to default channel", func() {
+				Expect(commandSendCommandObjectSender.SendCommandCallCount()).To(Equal(1))
+				argCtx, argCommand := commandSendCommandObjectSender.SendCommandArgsForCall(0)
+				Expect(argCtx).NotTo(BeNil())
+				Expect(argCommand.ChannelName).To(Equal(discord.ChannelName("notifications")))
+			})
+		})
+		Context("unknown type without target", func() {
+			BeforeEach(func() {
+				notification.Type = core.NotificationType("unknown")
+				notification.Target = nil
+			})
+			It("returns error", func() {
+				Expect(err).NotTo(BeNil())
+			})
+			It("sends nothing", func() {
+				Expect(commandSendCommandObjectSender.SendCommandCallCount()).To(Equal(0))
 			})
 		})
 		Context("with custom message", func() {
