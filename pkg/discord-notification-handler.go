@@ -20,22 +20,24 @@ import (
 // that handles all notification send to discord.
 func NewDiscordNotificationHandler(
 	sendCommandObjectSender command.SendCommandObjectSender,
-	defaultChannelName discord.ChannelName,
-	testChannelName discord.ChannelName,
+	routing DiscordChannelRouting,
 ) core.NotificationHandlerTx {
 	return core.NotificationHandlerTxFunc(
 		func(ctx context.Context, tx libkv.Tx, notification core.Notification) error {
 			glog.V(2).Infof("handling notification(%s) started", notification.Type)
-			var channelName discord.ChannelName
-			switch notification.Type {
-			case core.TestNotificationType:
-				channelName = testChannelName //"test"
-			default:
-				channelName = defaultChannelName //"notifications"
+			channelName, err := routing.Resolve(ctx, notification.Type)
+			if err != nil {
+				return errors.Wrapf(ctx, err, "resolve channel failed")
 			}
+			glog.V(2).
+				Infof("notification(%s) routed to channel(%s)", notification.Type, channelName)
 			if notification.Target != nil {
 				channelName = discord.ChannelName(*notification.Target)
-				glog.V(3).Infof("found target => set channelName to %s", channelName)
+				glog.V(2).Infof(
+					"notification(%s) target override => channel(%s)",
+					notification.Type,
+					channelName,
+				)
 			}
 			sendCommand := command.SendCommand{
 				ChannelName: channelName,

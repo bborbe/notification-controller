@@ -8,6 +8,10 @@ Please choose versions by [Semantic Versioning](http://semver.org/).
 * MINOR version when you add functionality in a backwards-compatible manner, and
 * PATCH version when you make backwards-compatible bug fixes.
 
+## Unreleased
+
+- feat: explicit notification type → Discord channel routing table (replaces the switch-with-default; unlisted types now fail instead of silently falling back)
+
 ## v0.3.1
 
 - chore: bump github.com/bborbe/notification to v0.3.0 (adds gchat-relevant notification type)

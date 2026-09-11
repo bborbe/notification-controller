@@ -136,8 +136,7 @@ func CreateDiscordNotificationHandler(
 			),
 			initiator,
 		),
-		defaultChannelName,
-		testChannelName,
+		pkg.NewDiscordChannelRouting(defaultChannelName, testChannelName),
 	)
 }
 
