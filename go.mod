@@ -9,7 +9,7 @@ require (
 	github.com/bborbe/kafka v1.26.0
 	github.com/bborbe/kv v1.21.16
 	github.com/bborbe/log v1.7.1
-	github.com/bborbe/notification v0.1.2
+	github.com/bborbe/notification v0.2.0
 	github.com/bborbe/run v1.11.0
 	github.com/bborbe/sentry v1.10.2
 	github.com/bborbe/service v1.10.14
