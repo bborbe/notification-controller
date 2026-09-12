@@ -18,6 +18,7 @@ import (
 	"github.com/bborbe/notification/discord"
 	libfactory "github.com/bborbe/notification/factory"
 	libmetrics "github.com/bborbe/notification/metrics"
+	"github.com/bborbe/notification/telegram"
 	"github.com/bborbe/run"
 	libsentry "github.com/bborbe/sentry"
 	"github.com/bborbe/service"
@@ -35,17 +36,18 @@ func main() {
 }
 
 type application struct {
-	SentryDSN                      string             `required:"true"  arg:"sentry-dsn"                   env:"SENTRY_DSN"                   usage:"SentryDSN"                              display:"length"`
-	SentryProxy                    string             `required:"false" arg:"sentry-proxy"                 env:"SENTRY_PROXY"                 usage:"Sentry Proxy"`
-	Listen                         string             `required:"true"  arg:"listen"                       env:"LISTEN"                       usage:"address to listen to"`
-	DataDir                        string             `required:"true"  arg:"datadir"                      env:"DATADIR"                      usage:"data directory"`
-	NoSync                         bool               `required:"true"  arg:"no-sync"                      env:"NO_SYNC"                      usage:"no sync"                                                 default:"false"`
-	KafkaBrokers                   libkafka.Brokers   `required:"true"  arg:"kafka-brokers"                env:"KAFKA_BROKERS"                usage:"Comma separated list of Kafka brokers"`
-	BatchSize                      libkafka.BatchSize `required:"true"  arg:"batch-size"                   env:"BATCH_SIZE"                   usage:"batch consume size"                                      default:"1"`
-	Branch                         base.Branch        `required:"true"  arg:"branch"                       env:"BRANCH"                       usage:"branch"`
-	DiscordNotificationChannelName string             `required:"true"  arg:"discord-notification-channel" env:"DISCORD_NOTIFICATION_CHANNEL" usage:"discord channel name for notifications"`
-	BuildGitCommit                 string             `required:"false" arg:"build-git-commit"             env:"BUILD_GIT_COMMIT"             usage:"Build Git commit hash"                                   default:"none"`
-	BuildDate                      *libtime.DateTime  `required:"false" arg:"build-date"                   env:"BUILD_DATE"                   usage:"Build timestamp (RFC3339)"`
+	SentryDSN                      string             `required:"true"  arg:"sentry-dsn"                    env:"SENTRY_DSN"                    usage:"SentryDSN"                              display:"length"`
+	SentryProxy                    string             `required:"false" arg:"sentry-proxy"                  env:"SENTRY_PROXY"                  usage:"Sentry Proxy"`
+	Listen                         string             `required:"true"  arg:"listen"                        env:"LISTEN"                        usage:"address to listen to"`
+	DataDir                        string             `required:"true"  arg:"datadir"                       env:"DATADIR"                       usage:"data directory"`
+	NoSync                         bool               `required:"true"  arg:"no-sync"                       env:"NO_SYNC"                       usage:"no sync"                                                 default:"false"`
+	KafkaBrokers                   libkafka.Brokers   `required:"true"  arg:"kafka-brokers"                 env:"KAFKA_BROKERS"                 usage:"Comma separated list of Kafka brokers"`
+	BatchSize                      libkafka.BatchSize `required:"true"  arg:"batch-size"                    env:"BATCH_SIZE"                    usage:"batch consume size"                                      default:"1"`
+	Branch                         base.Branch        `required:"true"  arg:"branch"                        env:"BRANCH"                        usage:"branch"`
+	DiscordNotificationChannelName string             `required:"true"  arg:"discord-notification-channel"  env:"DISCORD_NOTIFICATION_CHANNEL"  usage:"discord channel name for notifications"`
+	TelegramNotificationChatID     string             `required:"true"  arg:"telegram-notification-chat-id" env:"TELEGRAM_NOTIFICATION_CHAT_ID" usage:"telegram chat id for notifications"`
+	BuildGitCommit                 string             `required:"false" arg:"build-git-commit"              env:"BUILD_GIT_COMMIT"              usage:"Build Git commit hash"                                   default:"none"`
+	BuildDate                      *libtime.DateTime  `required:"false" arg:"build-date"                    env:"BUILD_DATE"                    usage:"Build timestamp (RFC3339)"`
 }
 
 func (a *application) Run(ctx context.Context, sentryClient libsentry.Client) error {
@@ -116,6 +118,7 @@ func (a *application) createNotificationConsumer(
 		serviceName,
 		discord.ChannelName(a.DiscordNotificationChannelName),
 		"test",
+		telegram.ChatID(a.TelegramNotificationChatID),
 	)
 }
 

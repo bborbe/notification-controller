@@ -22,7 +22,9 @@ import (
 	"github.com/bborbe/notification-controller/pkg/handler"
 	discordcommand "github.com/bborbe/notification/command/discord"
 	"github.com/bborbe/notification/command/notification"
+	telegramcommand "github.com/bborbe/notification/command/telegram"
 	"github.com/bborbe/notification/discord"
+	"github.com/bborbe/notification/telegram"
 	"github.com/bborbe/run"
 	libtime "github.com/bborbe/time"
 )
@@ -57,6 +59,7 @@ func CreateNotificationConsumer(
 	initiator cqrsiam.Initiator,
 	defaultChannelName discord.ChannelName,
 	testChannelName discord.ChannelName,
+	telegramChatID telegram.ChatID,
 ) run.Func {
 	return func(ctx context.Context) error {
 		return libkafka.NewOffsetConsumerHighwaterMarksBatchWithProvider(
@@ -80,6 +83,7 @@ func CreateNotificationConsumer(
 									initiator,
 									defaultChannelName,
 									testChannelName,
+									telegramChatID,
 								),
 							),
 							libkafka.NewMetrics(),
@@ -102,9 +106,9 @@ func CreateNotificationHandler(
 	initiator cqrsiam.Initiator,
 	defaultChannelName discord.ChannelName,
 	testChannelName discord.ChannelName,
+	telegramChatID telegram.ChatID,
 ) core.NotificationHandlerTx {
 	return core.NotificationHandlerTxList{
-		// TODO: add telegram, mail and fax :)
 		CreateDiscordNotificationHandler(
 			ctx,
 			syncProducer,
@@ -113,7 +117,37 @@ func CreateNotificationHandler(
 			defaultChannelName,
 			testChannelName,
 		),
+		CreateTelegramNotificationHandler(
+			ctx,
+			syncProducer,
+			branch,
+			initiator,
+			telegramChatID,
+		),
 	}
+}
+
+func CreateTelegramNotificationHandler(
+	ctx context.Context,
+	syncProducer libkafka.SyncProducer,
+	branch base.Branch,
+	initiator cqrsiam.Initiator,
+	chatID telegram.ChatID,
+) core.NotificationHandlerTx {
+	return pkg.NewTelegramNotificationHandler(
+		telegramcommand.NewSendCommandObjectSender(
+			base.NewCommandCreator(
+				base.RequestIDChannel(ctx),
+			),
+			cdb.NewCommandObjectSender(
+				syncProducer,
+				base.TopicPrefixFromBranch(branch),
+				log.DefaultSamplerFactory,
+			),
+			initiator,
+		),
+		pkg.NewTelegramChatRouting(chatID),
+	)
 }
 
 func CreateDiscordNotificationHandler(
