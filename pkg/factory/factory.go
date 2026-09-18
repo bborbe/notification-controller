@@ -60,6 +60,7 @@ func CreateNotificationConsumer(
 	defaultChannelName discord.ChannelName,
 	testChannelName discord.ChannelName,
 	telegramChatID telegram.ChatID,
+	telegramNoiseBot telegram.Bot,
 ) run.Func {
 	return func(ctx context.Context) error {
 		return libkafka.NewOffsetConsumerHighwaterMarksBatchWithProvider(
@@ -84,6 +85,7 @@ func CreateNotificationConsumer(
 									defaultChannelName,
 									testChannelName,
 									telegramChatID,
+									telegramNoiseBot,
 								),
 							),
 							libkafka.NewMetrics(),
@@ -107,6 +109,7 @@ func CreateNotificationHandler(
 	defaultChannelName discord.ChannelName,
 	testChannelName discord.ChannelName,
 	telegramChatID telegram.ChatID,
+	telegramNoiseBot telegram.Bot,
 ) core.NotificationHandlerTx {
 	return core.NotificationHandlerTxList{
 		CreateDiscordNotificationHandler(
@@ -123,6 +126,7 @@ func CreateNotificationHandler(
 			branch,
 			initiator,
 			telegramChatID,
+			telegramNoiseBot,
 		),
 	}
 }
@@ -133,6 +137,7 @@ func CreateTelegramNotificationHandler(
 	branch base.Branch,
 	initiator cqrsiam.Initiator,
 	chatID telegram.ChatID,
+	noiseBot telegram.Bot,
 ) core.NotificationHandlerTx {
 	return pkg.NewTelegramNotificationHandler(
 		telegramcommand.NewSendCommandObjectSender(
@@ -147,6 +152,7 @@ func CreateTelegramNotificationHandler(
 			initiator,
 		),
 		pkg.NewTelegramChatRouting(chatID),
+		pkg.NewTelegramBotRouting(noiseBot),
 	)
 }
 

@@ -8,6 +8,14 @@ Please choose versions by [Semantic Versioning](http://semver.org/).
 * MINOR version when you add functionality in a backwards-compatible manner, and
 * PATCH version when you make backwards-compatible bug fixes.
 
+## Unreleased
+
+- feat: add `TelegramBotRouting`, mapping each notification type to the bot that delivers it, and stamp the resolved bot on the outgoing `SendCommand`. A chat id cannot identify a bot — for a private chat it is the recipient's own user id — so which bot sends a message is a separate axis from which chat it reaches.
+- feat: add `TELEGRAM_NOISE_BOT`, naming the bot that carries machine noise. `agent-escalation` routes to it; every other type stays on the default bot. Empty (the default) keeps all types on the original bot, so an unconfigured deployment is unchanged.
+- fix: route `account-hit-loss-limit` and `account-hit-profit-limit` to the telegram chat. Both were listed as deliberately unrouted and never reached the phone, though they are human-decision types that should. They now arrive on the default bot alongside `pending-approval`.
+- docs: state in both routing tables that `TelegramChatRouting` owns the chat and `TelegramBotRouting` owns the sender, and that `notification.Target` overrides the chat only — never the bot, which would let a producer move an escalation onto the bot that must keep alerting.
+- chore: bump `github.com/bborbe/notification` to v0.7.0 for the `Bot` field on `SendCommand`.
+
 ## v0.5.0
 
 - feat: add telegram notification handler as the second entry of the handler list
