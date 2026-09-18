@@ -23,6 +23,7 @@ import (
 func NewTelegramNotificationHandler(
 	sendCommandObjectSender telegramcommand.SendCommandObjectSender,
 	routing TelegramChatRouting,
+	botRouting TelegramBotRouting,
 ) core.NotificationHandlerTx {
 	return core.NotificationHandlerTxFunc(
 		func(ctx context.Context, tx libkv.Tx, notification core.Notification) error {
@@ -31,12 +32,22 @@ func NewTelegramNotificationHandler(
 			if err != nil {
 				return errors.Wrapf(ctx, err, "resolve chat failed")
 			}
+			bot, err := botRouting.Resolve(ctx, notification.Type)
+			if err != nil {
+				return errors.Wrapf(ctx, err, "resolve bot failed")
+			}
 			if notification.Target != nil {
+				// Target overrides the chat only. The bot stays whatever the
+				// type routed to: Target names a destination within a channel
+				// ("telegram room", "discord channelName"), not a sender, so
+				// letting it change the bot would hand a producer the power to
+				// move an escalation onto the bot that must keep alerting.
 				chatID = telegram.ChatID(*notification.Target)
 				glog.V(2).Infof(
-					"notification(%s) target override => chat(%s)",
+					"notification(%s) target override => chat(%s), bot(%s) unchanged",
 					notification.Type,
 					chatID,
+					bot,
 				)
 			}
 			if chatID == "" {
@@ -46,11 +57,16 @@ func NewTelegramNotificationHandler(
 				)
 				return nil
 			}
-			glog.V(2).
-				Infof("notification(%s) routed to telegram chat(%s)", notification.Type, chatID)
+			glog.V(2).Infof(
+				"notification(%s) routed to telegram chat(%s) bot(%s)",
+				notification.Type,
+				chatID,
+				bot,
+			)
 			sendCommand := telegramcommand.SendCommand{
 				ChatID:  chatID,
 				Message: telegram.Message(notification.Message.String()),
+				Bot:     bot,
 			}
 			if err := sendCommandObjectSender.SendCommand(ctx, sendCommand); err != nil {
 				return errors.Wrapf(ctx, err, "send command failed")

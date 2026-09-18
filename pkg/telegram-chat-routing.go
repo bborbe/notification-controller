@@ -18,10 +18,15 @@ import (
 // core.AvailableNotificationTypes is listed, so a new notification type fails
 // the unit test instead of silently reaching (or silently missing) the phone.
 //
-// Telegram is the phone channel and carries only the high-tier types named in
-// Notification Targets: pending-approval and agent-escalation. Everything else
-// — signal in particular, which belongs on Discord — resolves to the empty
-// chat and is skipped by the handler.
+// Telegram is the phone channel and carries only the high-tier types:
+// pending-approval, agent-escalation and the two account-limit types.
+// Everything else — signal in particular, which belongs on Discord — resolves
+// to the empty chat and is skipped by the handler.
+//
+// This table decides WHICH CHAT a type reaches, never which bot sends it. A
+// chat id cannot identify a bot — for a private chat it is the recipient's own
+// user id, so every bot serving one person shares it, and all the entries below
+// are the same chat. TelegramBotRouting owns the sender.
 type TelegramChatRouting map[core.NotificationType]telegram.ChatID
 
 // NewTelegramChatRouting builds the routing table from the configured chat.
@@ -29,8 +34,8 @@ type TelegramChatRouting map[core.NotificationType]telegram.ChatID
 // as unrouted, which the handler treats as a skip rather than an error.
 func NewTelegramChatRouting(chatID telegram.ChatID) TelegramChatRouting {
 	return TelegramChatRouting{
-		core.AccountHitLossLimitNotificationType:   "",
-		core.AccountHitProfitLimitNotificationType: "",
+		core.AccountHitLossLimitNotificationType:   chatID,
+		core.AccountHitProfitLimitNotificationType: chatID,
 		core.AgentEscalationNotificationType:       chatID,
 		core.BacktestCompletedNotificationType:     "",
 		core.BacktestFailedNotificationType:        "",

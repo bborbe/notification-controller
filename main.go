@@ -46,6 +46,7 @@ type application struct {
 	Branch                         base.Branch        `required:"true"  arg:"branch"                        env:"BRANCH"                        usage:"branch"`
 	DiscordNotificationChannelName string             `required:"true"  arg:"discord-notification-channel"  env:"DISCORD_NOTIFICATION_CHANNEL"  usage:"discord channel name for notifications"`
 	TelegramNotificationChatID     string             `required:"true"  arg:"telegram-notification-chat-id" env:"TELEGRAM_NOTIFICATION_CHAT_ID" usage:"telegram chat id for notifications"`
+	TelegramNoiseBot               telegram.Bot       `required:"false" arg:"telegram-noise-bot"            env:"TELEGRAM_NOISE_BOT"            usage:"bot delivering machine noise"`
 	BuildGitCommit                 string             `required:"false" arg:"build-git-commit"              env:"BUILD_GIT_COMMIT"              usage:"Build Git commit hash"                                   default:"none"`
 	BuildDate                      *libtime.DateTime  `required:"false" arg:"build-date"                    env:"BUILD_DATE"                    usage:"Build timestamp (RFC3339)"`
 }
@@ -119,6 +120,7 @@ func (a *application) createNotificationConsumer(
 		discord.ChannelName(a.DiscordNotificationChannelName),
 		"test",
 		telegram.ChatID(a.TelegramNotificationChatID),
+		a.TelegramNoiseBot,
 	)
 }
 
