@@ -8,6 +8,10 @@ Please choose versions by [Semantic Versioning](http://semver.org/).
 * MINOR version when you add functionality in a backwards-compatible manner, and
 * PATCH version when you make backwards-compatible bug fixes.
 
+## Unreleased
+
+- docs: correct the notification-type strings named in the v0.6.0 entry below. It said `account-hit-loss-limit` and `account-hit-profit-limit`; those are the **Go constant identifiers** (`AccountHitLossLimitNotificationType`), not the values that travel on the wire. The wire strings are `account-loss-limit` and `account-profit-limit` — no `hit` — per the `NotificationType` const block in `github.com/bborbe/notification`, which is the only authority for them. The fix described in v0.6.0 is real and verified end-to-end on dev; only the names used to describe it were wrong. Corrected here rather than in place because a released section is immutable. Anyone reproducing the verification from the v0.6.0 wording will otherwise publish the wrong type and get `validate Type failed: notificationType(account-hit-loss-limit) is invalid`, which reads as a routing regression rather than a typo.
+
 ## v0.6.0
 
 - feat: add `TelegramBotRouting`, mapping each notification type to the bot that delivers it, and stamp the resolved bot on the outgoing `SendCommand`. A chat id cannot identify a bot — for a private chat it is the recipient's own user id — so which bot sends a message is a separate axis from which chat it reaches.
