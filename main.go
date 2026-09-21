@@ -84,7 +84,7 @@ func (a *application) Run(ctx context.Context, sentryClient libsentry.Client) er
 	return service.Run(
 		ctx,
 		a.createCommandConsumer(currentTime, saramaClientProvider, syncProducer, db),
-		a.createNotificationConsumer(saramaClientProvider, syncProducer, db),
+		a.createNotificationConsumer(currentTime, saramaClientProvider, syncProducer, db),
 		a.createHTTPServer(db, syncProducer),
 	)
 }
@@ -106,11 +106,13 @@ func (a *application) createCommandConsumer(
 }
 
 func (a *application) createNotificationConsumer(
+	currentTimeGetter libtime.CurrentTimeGetter,
 	saramaClientProvider libkafka.SaramaClientProvider,
 	syncProducer libkafka.SyncProducer,
 	db libkv.DB,
 ) run.Func {
 	return factory.CreateNotificationConsumer(
+		currentTimeGetter,
 		saramaClientProvider,
 		syncProducer,
 		db,

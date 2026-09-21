@@ -51,6 +51,7 @@ func CreateSendHandler(
 }
 
 func CreateNotificationConsumer(
+	currentTimeGetter libtime.CurrentTimeGetter,
 	saramaClientProvider libkafka.SaramaClientProvider,
 	syncProducer libkafka.SyncProducer,
 	db libkv.DB,
@@ -63,41 +64,58 @@ func CreateNotificationConsumer(
 	telegramNoiseBot telegram.Bot,
 ) run.Func {
 	return func(ctx context.Context) error {
-		return libkafka.NewOffsetConsumerHighwaterMarksBatchWithProvider(
-			saramaClientProvider,
-			core.NotificationV1SchemaID.EventTopic(base.TopicPrefixFromBranch(branch)),
-			libkafka.NewStoreOffsetManager(
-				libkafka.NewOffsetStore(db),
-				libkafka.OffsetOldest,
-				libkafka.OffsetNewest,
-			),
-			libkafka.NewMessageHandlerBatchTxUpdate(
-				db,
-				libkafka.NewMessageHandlerBatchTx(
-					libkafka.NewMessageHandlerTxSkipErrors(
-						libkafka.NewMessageHandlerTxMetrics(
-							core.NewNotificationMessageHandlerTx(
-								CreateNotificationHandler(
-									ctx,
-									syncProducer,
-									branch,
-									initiator,
-									defaultChannelName,
-									testChannelName,
-									telegramChatID,
-									telegramNoiseBot,
-								),
-							),
-							libkafka.NewMetrics(),
-						),
-						log.DefaultSamplerFactory,
+		telegramThrottle := CreateTelegramNotificationHandler(
+			ctx,
+			syncProducer,
+			branch,
+			initiator,
+			telegramChatID,
+			telegramNoiseBot,
+			currentTimeGetter,
+		)
+		// The throttle buffers inside the handler, so its flusher runs beside
+		// the consumer rather than inside it: the handler is invoked from a
+		// CQRS notification handler and must not block the batch.
+		return run.CancelOnFirstError(
+			ctx,
+			telegramThrottle.Run,
+			func(ctx context.Context) error {
+				return libkafka.NewOffsetConsumerHighwaterMarksBatchWithProvider(
+					saramaClientProvider,
+					core.NotificationV1SchemaID.EventTopic(base.TopicPrefixFromBranch(branch)),
+					libkafka.NewStoreOffsetManager(
+						libkafka.NewOffsetStore(db),
+						libkafka.OffsetOldest,
+						libkafka.OffsetNewest,
 					),
-				),
-			),
-			batchSize,
-			run.NewTrigger(),
-			log.DefaultSamplerFactory,
-		).Consume(ctx)
+					libkafka.NewMessageHandlerBatchTxUpdate(
+						db,
+						libkafka.NewMessageHandlerBatchTx(
+							libkafka.NewMessageHandlerTxSkipErrors(
+								libkafka.NewMessageHandlerTxMetrics(
+									core.NewNotificationMessageHandlerTx(
+										CreateNotificationHandler(
+											ctx,
+											syncProducer,
+											branch,
+											initiator,
+											defaultChannelName,
+											testChannelName,
+											telegramThrottle,
+										),
+									),
+									libkafka.NewMetrics(),
+								),
+								log.DefaultSamplerFactory,
+							),
+						),
+					),
+					batchSize,
+					run.NewTrigger(),
+					log.DefaultSamplerFactory,
+				).Consume(ctx)
+			},
+		)
 	}
 }
 
@@ -108,8 +126,7 @@ func CreateNotificationHandler(
 	initiator cqrsiam.Initiator,
 	defaultChannelName discord.ChannelName,
 	testChannelName discord.ChannelName,
-	telegramChatID telegram.ChatID,
-	telegramNoiseBot telegram.Bot,
+	telegramHandler core.NotificationHandlerTx,
 ) core.NotificationHandlerTx {
 	return core.NotificationHandlerTxList{
 		CreateDiscordNotificationHandler(
@@ -120,17 +137,17 @@ func CreateNotificationHandler(
 			defaultChannelName,
 			testChannelName,
 		),
-		CreateTelegramNotificationHandler(
-			ctx,
-			syncProducer,
-			branch,
-			initiator,
-			telegramChatID,
-			telegramNoiseBot,
-		),
+		telegramHandler,
 	}
 }
 
+// CreateTelegramNotificationHandler builds the Telegram lane: the routing
+// tables, the command sender, and the throttle that wraps them.
+//
+// The throttle wraps the handler, not the sender. A telegramcommand.SendCommand
+// carries only ChatID/Message/Bot, so no notification type survives to the
+// sender and the two trading-alert types could not be exempted at that seam.
+// The handler is the last point where the type is still in scope.
 func CreateTelegramNotificationHandler(
 	ctx context.Context,
 	syncProducer libkafka.SyncProducer,
@@ -138,21 +155,32 @@ func CreateTelegramNotificationHandler(
 	initiator cqrsiam.Initiator,
 	chatID telegram.ChatID,
 	noiseBot telegram.Bot,
-) core.NotificationHandlerTx {
-	return pkg.NewTelegramNotificationHandler(
-		telegramcommand.NewSendCommandObjectSender(
-			base.NewCommandCreator(
-				base.RequestIDChannel(ctx),
-			),
-			cdb.NewCommandObjectSender(
-				syncProducer,
-				base.TopicPrefixFromBranch(branch),
-				log.DefaultSamplerFactory,
-			),
-			initiator,
+	currentTimeGetter libtime.CurrentTimeGetter,
+) *pkg.TelegramThrottle {
+	sendCommandObjectSender := telegramcommand.NewSendCommandObjectSender(
+		base.NewCommandCreator(
+			base.RequestIDChannel(ctx),
 		),
-		pkg.NewTelegramChatRouting(chatID),
-		pkg.NewTelegramBotRouting(noiseBot),
+		cdb.NewCommandObjectSender(
+			syncProducer,
+			base.TopicPrefixFromBranch(branch),
+			log.DefaultSamplerFactory,
+		),
+		initiator,
+	)
+	telegramChatRouting := pkg.NewTelegramChatRouting(chatID)
+	telegramBotRouting := pkg.NewTelegramBotRouting(noiseBot)
+	return pkg.NewTelegramThrottle(
+		pkg.NewTelegramNotificationHandler(
+			sendCommandObjectSender,
+			telegramChatRouting,
+			telegramBotRouting,
+		),
+		sendCommandObjectSender,
+		telegramChatRouting,
+		telegramBotRouting,
+		pkg.DefaultTelegramThrottleWindow,
+		currentTimeGetter,
 	)
 }
 
