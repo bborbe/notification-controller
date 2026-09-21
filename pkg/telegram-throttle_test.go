@@ -24,7 +24,7 @@ var _ = Describe("TelegramThrottle", func() {
 		ctx                            context.Context
 		currentTime                    libtime.CurrentTime
 		commandSendCommandObjectSender *mocks.CommandTelegramSendCommandObjectSender
-		telegramThrottle               *pkg.TelegramThrottle
+		telegramThrottle               pkg.TelegramThrottle
 		window                         time.Duration
 		startedAt                      time.Time
 		sendCommandCount               func() int

@@ -63,7 +63,18 @@ type telegramThrottleWindow struct {
 // burst that straddles the edge therefore produces one extra message, because
 // the post-flush arrival is a fresh leading edge — an accepted overshoot, not a
 // defect.
-type TelegramThrottle struct {
+//
+//counterfeiter:generate -o ../mocks/telegram-throttle.go --fake-name TelegramThrottle . TelegramThrottle
+type TelegramThrottle interface {
+	core.NotificationHandlerTx
+	// Run flushes window edges until the context is cancelled.
+	Run(ctx context.Context) error
+	// Flush emits the coalesced message for every destination whose window has
+	// reached its edge, then closes those windows.
+	Flush(ctx context.Context) error
+}
+
+type telegramThrottle struct {
 	inner             core.NotificationHandlerTx
 	sender            telegramcommand.SendCommandObjectSender
 	routing           TelegramChatRouting
@@ -85,8 +96,8 @@ func NewTelegramThrottle(
 	botRouting TelegramBotRouting,
 	window time.Duration,
 	currentTimeGetter libtime.CurrentTimeGetter,
-) *TelegramThrottle {
-	return &TelegramThrottle{
+) TelegramThrottle {
+	return &telegramThrottle{
 		inner:             inner,
 		sender:            sender,
 		routing:           routing,
@@ -103,7 +114,7 @@ func NewTelegramThrottle(
 // are never buffered and they neither open nor advance a window, so a trading
 // alert can be neither delayed by this throttle nor able to suppress a gate
 // queued behind it.
-func (t *TelegramThrottle) UpdateNotification(
+func (t *telegramThrottle) UpdateNotification(
 	ctx context.Context,
 	tx libkv.Tx,
 	notification core.Notification,
@@ -131,7 +142,7 @@ func (t *TelegramThrottle) UpdateNotification(
 
 // DeleteNotification implements core.NotificationHandlerTx and is delegated
 // unchanged; the throttle holds no state a deletion could invalidate.
-func (t *TelegramThrottle) DeleteNotification(
+func (t *telegramThrottle) DeleteNotification(
 	ctx context.Context,
 	tx libkv.Tx,
 	identifier base.Identifier,
@@ -145,7 +156,7 @@ func (t *TelegramThrottle) DeleteNotification(
 //
 // The buffer is in memory: a pod restart loses a batch that has not yet been
 // flushed. That is a named, accepted cost, not a defect.
-func (t *TelegramThrottle) Run(ctx context.Context) error {
+func (t *telegramThrottle) Run(ctx context.Context) error {
 	ticker := time.NewTicker(telegramThrottleFlushInterval)
 	defer ticker.Stop()
 	for {
@@ -164,7 +175,7 @@ func (t *TelegramThrottle) Run(ctx context.Context) error {
 // reached its edge, then closes those windows. A window that reaches its edge
 // with an empty buffer is closed too, so the next notification on that
 // destination starts a fresh leading edge instead of waiting.
-func (t *TelegramThrottle) Flush(ctx context.Context) error {
+func (t *telegramThrottle) Flush(ctx context.Context) error {
 	now := t.currentTimeGetter.Now()
 
 	t.mutex.Lock()
@@ -180,7 +191,7 @@ func (t *TelegramThrottle) Flush(ctx context.Context) error {
 				destination,
 				coalesceTelegramMessages(window.buffer, t.window),
 			); err != nil {
-				return err
+				return errors.Wrapf(ctx, err, "send coalesced message failed")
 			}
 		}
 		delete(t.windows, destination)
@@ -196,7 +207,7 @@ func (t *TelegramThrottle) Flush(ctx context.Context) error {
 //
 // An arrival that finds a past-edge window still holding a buffer flushes that
 // buffer first, so a buffered batch is never carried into the next window.
-func (t *TelegramThrottle) offer(
+func (t *telegramThrottle) offer(
 	ctx context.Context,
 	destination telegramThrottleDestination,
 	message telegram.Message,
@@ -229,14 +240,14 @@ func (t *TelegramThrottle) offer(
 			destination,
 			coalesceTelegramMessages(buffered, t.window),
 		); err != nil {
-			return err
+			return errors.Wrapf(ctx, err, "send coalesced message failed")
 		}
 	}
 	window.flushAt = now.Add(t.window)
 	return t.send(ctx, destination, message)
 }
 
-func (t *TelegramThrottle) send(
+func (t *telegramThrottle) send(
 	ctx context.Context,
 	destination telegramThrottleDestination,
 	message telegram.Message,

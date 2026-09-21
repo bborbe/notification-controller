@@ -156,7 +156,7 @@ func CreateTelegramNotificationHandler(
 	chatID telegram.ChatID,
 	noiseBot telegram.Bot,
 	currentTimeGetter libtime.CurrentTimeGetter,
-) *pkg.TelegramThrottle {
+) pkg.TelegramThrottle {
 	sendCommandObjectSender := telegramcommand.NewSendCommandObjectSender(
 		base.NewCommandCreator(
 			base.RequestIDChannel(ctx),
