@@ -6,14 +6,14 @@ require (
 	github.com/bborbe/cqrs v0.6.12
 	github.com/bborbe/errors v1.6.3
 	github.com/bborbe/http v1.26.30
-	github.com/bborbe/kafka v1.27.1
+	github.com/bborbe/kafka v1.28.3
 	github.com/bborbe/kv v1.21.18
 	github.com/bborbe/log v1.7.4
 	github.com/bborbe/notification v0.7.2
 	github.com/bborbe/run v1.11.2
 	github.com/bborbe/sentry v1.10.4
-	github.com/bborbe/service v1.10.16
-	github.com/bborbe/time v1.27.16
+	github.com/bborbe/service v1.11.0
+	github.com/bborbe/time v1.27.17
 	github.com/golang/glog v1.2.5
 	github.com/gorilla/mux v1.8.1
 	github.com/onsi/ginkgo/v2 v2.33.1
@@ -25,15 +25,15 @@ require (
 	github.com/IBM/sarama v1.61.1 // indirect
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/bborbe/argument/v2 v2.13.6 // indirect
-	github.com/bborbe/badgerkv v1.11.20 // indirect
+	github.com/bborbe/badgerkv v1.11.21 // indirect
 	github.com/bborbe/boltkv v1.16.2 // indirect
 	github.com/bborbe/collection v1.21.2 // indirect
-	github.com/bborbe/k8s v1.14.22 // indirect
-	github.com/bborbe/math v1.4.14 // indirect
-	github.com/bborbe/memorykv v1.6.18 // indirect
+	github.com/bborbe/k8s v1.14.23 // indirect
+	github.com/bborbe/math v1.4.15 // indirect
+	github.com/bborbe/memorykv v1.6.19 // indirect
 	github.com/bborbe/parse v1.12.3 // indirect
 	github.com/bborbe/strimzi v1.8.20 // indirect
-	github.com/bborbe/validation v1.5.4 // indirect
+	github.com/bborbe/validation v1.5.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bwmarrin/discordgo v0.29.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -56,7 +56,7 @@ require (
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
 	github.com/google/gnostic-models v0.7.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/pprof v0.0.0-20261014150452-c3b4e57cab2c // indirect
+	github.com/google/pprof v0.0.0-20261016150608-1facf8f91b50 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
 	github.com/hashicorp/go-uuid v1.0.4 // indirect
