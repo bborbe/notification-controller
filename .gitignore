@@ -1,2 +1,11 @@
 data/
 *.log
+/vendor
+/.dark-factory.lock
+/.dark-factory.log
+/prompts/log/*
+!/prompts/log/.keep
+/specs/log/*
+!/specs/log/.keep
+/prompts/in-progress/*.lock
+/specs/in-progress/*.lock
