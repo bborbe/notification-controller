@@ -3,3 +3,11 @@ pr: true
 autoRelease: false
 autoGeneratePrompts: true
 validationPrompt: docs/dod.md
+# All three default to `make precommit`, which in this repo chains trivy
+# (needs the trivy binary plus a ghcr.io database pull) and vulncheck /
+# osv-scanner (network module fetches). preflightCommand runs on the host
+# before each prompt, so an unrunnable preflight kills every prompt before
+# the container starts.
+preflightCommand: make test
+testCommand: make test
+validationCommand: make test lint
