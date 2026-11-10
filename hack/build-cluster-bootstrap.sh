@@ -49,7 +49,22 @@ echo "build-cluster-bootstrap: namespace ${NAMESPACE} present"
 
 # The lookup key comes from the template, so the template stays the single
 # declaration of which TeamVault item and which registry this secret is for.
-TEAMVAULT_KEY="$(sed -nE 's/.*"([A-Za-z0-9]{6,12})" \| teamvaultUser.*/\1/p' "${TEMPLATE}" | head -1)"
+#
+# awk, not a `sed` pipeline truncated by `head`: `head` exits after the first
+# match, so a template carrying a second `teamvaultUser` occurrence sends
+# SIGPIPE to `sed`, which fails the pipeline under `pipefail` before the `die`
+# below can report the real cause. `hack/build-cluster.sh` replaced the same
+# shape for the same reason.
+TEAMVAULT_KEY="$(awk '
+	{
+		if (match($0, /"[A-Za-z0-9]{6,12}" \| teamvaultUser/)) {
+			key = substr($0, RSTART + 1, RLENGTH - 1)
+			sub(/".*/, "", key)
+			print key
+			exit
+		}
+	}
+' "${TEMPLATE}")"
 [ -n "${TEAMVAULT_KEY}" ] || die "no teamvaultUser lookup key found in ${TEMPLATE}"
 
 # teamvault-cli, not teamvault-config-parser: the parser takes its password from
@@ -63,8 +78,13 @@ TV_PASS="$(teamvault-cli password --teamvault-config "${TEAMVAULT}" --teamvault-
 # than printf: a credential containing a quote, a backslash or a newline makes
 # raw interpolation produce malformed JSON — a backslash can escape the closing
 # quote and let a crafted value inject fields into the dockerconfigjson.
+#
+# The password reaches jq as a file, never as `--arg`: an argv argument is
+# readable by every local process through `ps` or /proc/<pid>/cmdline for the
+# life of the process, which on a shared build host is an exposure the 600
+# tempfile below does not cover. The username is not secret and stays an `--arg`.
 command -v jq >/dev/null 2>&1 || die "jq is required to render ${TEMPLATE} safely"
-jq -n --arg user "${TV_USER}" --arg pass "${TV_PASS}" \
+jq -n --arg user "${TV_USER}" --rawfile pass <(printf '%s' "${TV_PASS}") \
 	'{auths:{"https://index.docker.io/v1/":{username:$user,password:$pass}}}' \
 	>"${RENDERED}"
 unset TV_USER TV_PASS
