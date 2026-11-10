@@ -59,9 +59,14 @@ TV_USER="$(teamvault-cli username --teamvault-config "${TEAMVAULT}" --teamvault-
 TV_PASS="$(teamvault-cli password --teamvault-config "${TEAMVAULT}" --teamvault-key="${TEAMVAULT_KEY}")"
 [ -n "${TV_USER}" ] && [ -n "${TV_PASS}" ] || die "teamvault returned an empty credential for key ${TEAMVAULT_KEY}"
 
-# docker.io's canonical auths key, per the template.
-printf '{"auths":{"https://index.docker.io/v1/":{"username":"%s","password":"%s"}}}' \
-	"${TV_USER}" "${TV_PASS}" >"${RENDERED}"
+# docker.io's canonical auths key, per the template. Render through jq rather
+# than printf: a credential containing a quote, a backslash or a newline makes
+# raw interpolation produce malformed JSON — a backslash can escape the closing
+# quote and let a crafted value inject fields into the dockerconfigjson.
+command -v jq >/dev/null 2>&1 || die "jq is required to render ${TEMPLATE} safely"
+jq -n --arg user "${TV_USER}" --arg pass "${TV_PASS}" \
+	'{auths:{"https://index.docker.io/v1/":{username:$user,password:$pass}}}' \
+	>"${RENDERED}"
 unset TV_USER TV_PASS
 [ -s "${RENDERED}" ] || die "failed to render ${TEMPLATE}"
 
