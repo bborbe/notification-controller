@@ -2,7 +2,13 @@ DOCKER_REGISTRY ?= docker.io
 
 # Recursive assignment on purpose: SERVICE is assigned in Makefile *after* this
 # file is included, so a simple := would capture an empty value.
-IMAGE ?= bborbe/$(SERVICE)
+#
+# `override` on purpose: this value selects both the push target and, below,
+# the repository the cluster Job clones while the push credential is mounted.
+# A caller-supplied IMAGE would let `make build BUILD_TARGET=<cluster>
+# IMAGE=someone/else` point a credentialed build at an arbitrary repository,
+# so it is pinned here rather than left overridable.
+override IMAGE = bborbe/$(SERVICE)
 
 ifeq ($(VERSION),)
 	VERSION := $(shell git describe --tags `git rev-list --tags --max-count=1`)
@@ -37,7 +43,7 @@ else
 	fi
 	@echo "build-cluster: building $(DOCKER_REGISTRY)/$(IMAGE):$(VERSION) on $(BUILD_TARGET)"
 	BUILD_TARGET='$(BUILD_TARGET)' \
-	REPO_URL='https://github.com/$(IMAGE).git' \
+	REPO_URL='https://github.com/bborbe/notification-controller.git' \
 	REF='$(REF)' \
 	TAG='$(VERSION)' \
 	DOCKERFILE='Dockerfile' \
