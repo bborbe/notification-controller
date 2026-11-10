@@ -8,6 +8,10 @@ Please choose versions by [Semantic Versioning](http://semver.org/).
 * MINOR version when you add functionality in a backwards-compatible manner, and
 * PATCH version when you make backwards-compatible bug fixes.
 
+## Unreleased
+
+- feat: Add a `BUILD_TARGET` dispatch to `Makefile.docker` so `make build` routes to a Kubernetes build Job when set to anything other than `local`, requires an explicit `VERSION` on that path, and makes `upload`/`clean` no-ops there; the local arm and `buca` are unchanged.
+
 ## v0.7.3
 
 - chore(dark-factory): worktree workflow with PR delivery

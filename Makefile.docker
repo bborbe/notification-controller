@@ -1,12 +1,20 @@
 DOCKER_REGISTRY ?= docker.io
 
+# Recursive assignment on purpose: SERVICE is assigned in Makefile *after* this
+# file is included, so a simple := would capture an empty value.
+IMAGE ?= bborbe/$(SERVICE)
+
 ifeq ($(VERSION),)
 	VERSION := $(shell git describe --tags `git rev-list --tags --max-count=1`)
 endif
 
+BUILD_TARGET ?= local
+BUILD_TIMEOUT ?= 3600
+
 .PHONY: build
 build: check-go-mod
-	@if [ -z "$(VERSION)" ]; then echo "ERROR: no VERSION set and no git tag found — set VERSION=vX.Y.Z or create a tag" >&2; exit 1; fi
+ifeq ($(BUILD_TARGET),local)
+	@if [ -z "$(VERSION)" ]; then echo "ERROR: no VERSION set and no git tag found - set VERSION=vX.Y.Z or create a tag" >&2; exit 1; fi
 	DOCKER_BUILDKIT=1 \
 	docker build \
 	--pull \
@@ -16,28 +24,60 @@ build: check-go-mod
 	--build-arg DOCKER_REGISTRY=$(DOCKER_REGISTRY) \
 	--build-arg BUILD_GIT_COMMIT=$$(git rev-parse --short HEAD) \
 	--build-arg BUILD_DATE=$$(date -u +%Y-%m-%dT%H:%M:%SZ) \
-	-t $(DOCKER_REGISTRY)/bborbe/$(SERVICE):$(VERSION) \
+	-t $(DOCKER_REGISTRY)/$(IMAGE):$(VERSION) \
 	-f Dockerfile .
+else
+# The cluster arm builds a caller-named ref and pushes it. It refuses to run
+# without an explicit VERSION: the default above resolves to the newest release
+# tag, and building over that tag would replace a released image.
+	@if [ "$(origin VERSION)" = "file" ]; then \
+		echo "ERROR: the cluster arm needs an explicit VERSION." >&2; \
+		echo "  Pass VERSION=<scratch-tag> on the command line." >&2; \
+		exit 1; \
+	fi
+	@echo "build-cluster: building $(DOCKER_REGISTRY)/$(IMAGE):$(VERSION) on $(BUILD_TARGET)"
+	BUILD_TARGET='$(BUILD_TARGET)' \
+	REPO_URL='https://github.com/$(IMAGE).git' \
+	REF='$(REF)' \
+	TAG='$(VERSION)' \
+	DOCKERFILE='Dockerfile' \
+	IMAGE='$(DOCKER_REGISTRY)/$(IMAGE)' \
+	DOCKER_REGISTRY='$(DOCKER_REGISTRY)' \
+	PUSH='true' \
+	PUSH_SECRET='buildkit-push' \
+	TIMEOUT='$(BUILD_TIMEOUT)' \
+	hack/build-cluster.sh
+endif
 
 .PHONY: check-go-mod
 check-go-mod:
+ifeq ($(BUILD_TARGET),local)
 	@if [ -f "go.mod" ]; then \
 		echo "go.mod found, running go mod vendor..."; \
 		go mod vendor; \
 	else \
 		echo "go.mod not found, skipping go mod vendor."; \
 	fi
+endif
 
 .PHONY: upload
 upload:
-	docker push $(DOCKER_REGISTRY)/bborbe/$(SERVICE):$(VERSION)
+ifeq ($(BUILD_TARGET),local)
+	docker push $(DOCKER_REGISTRY)/$(IMAGE):$(VERSION)
+else
+	@echo "upload: nothing to do - the cluster arm already pushed the image"
+endif
 
 .PHONY: clean
 clean:
-	docker rmi $(DOCKER_REGISTRY)/bborbe/$(SERVICE):$(VERSION) || true
+ifeq ($(BUILD_TARGET),local)
+	docker rmi $(DOCKER_REGISTRY)/$(IMAGE):$(VERSION) || true
 	docker image prune -f || true
 	docker builder prune --all -f || true
 	rm -rf vendor
+else
+	@echo "clean: nothing to do - the cluster arm leaves nothing on this host"
+endif
 
 # Publish-only: no k8s in this repo. Deployment lives in the maintainer Helm
 # chart (mirror + keel-pattern). apply is a no-op placeholder.
@@ -45,7 +85,8 @@ clean:
 apply:
 	@echo "skip apply — publish-only"
 
-# Operator-run publish to Docker Hub (requires `docker login`). CI runs
-# `make precommit`, never `buca`, so the unconditional push is safe.
+# Operator-run local publish to Docker Hub (requires `docker login`); this is
+# the local build path (default BUILD_TARGET=local). CI runs `make precommit`,
+# never `buca`, so the unconditional push is safe.
 .PHONY: buca
 buca: build upload clean apply
