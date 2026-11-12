@@ -8,7 +8,7 @@ Please choose versions by [Semantic Versioning](http://semver.org/).
 * MINOR version when you add functionality in a backwards-compatible manner, and
 * PATCH version when you make backwards-compatible bug fixes.
 
-## Unreleased
+## v0.8.3
 
 - chore: update Go to 1.27.4 and github.com/bborbe/cqrs to v0.6.16, github.com/bborbe/http to v1.26.34, github.com/bborbe/kafka to v1.29.14, github.com/bborbe/log to v1.7.9, github.com/bborbe/notification to v0.7.12, github.com/bborbe/time to v1.27.28
 
