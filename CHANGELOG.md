@@ -8,6 +8,10 @@ Please choose versions by [Semantic Versioning](http://semver.org/).
 * MINOR version when you add functionality in a backwards-compatible manner, and
 * PATCH version when you make backwards-compatible bug fixes.
 
+## Unreleased
+
+- chore: update Go to 1.27.4 and github.com/bborbe/cqrs to v0.6.16, github.com/bborbe/http to v1.26.34, github.com/bborbe/kafka to v1.29.14, github.com/bborbe/log to v1.7.9, github.com/bborbe/notification to v0.7.12, github.com/bborbe/time to v1.27.28
+
 ## v0.8.2
 
 - fix: Keep the TeamVault password out of the `jq` process argv in `hack/build-cluster-bootstrap.sh` — it is rendered via `--rawfile` instead of `--arg pass`, so it is no longer readable through `ps` or `/proc/<pid>/cmdline` on a shared build host; and replace the `sed`-pipeline key extraction with an `awk` single-pass form, so a second `teamvaultUser` occurrence can no longer abort the script with SIGPIPE under `pipefail` before its own error message.
